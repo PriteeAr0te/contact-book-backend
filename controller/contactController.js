@@ -40,8 +40,8 @@ const updateContact = asyncHandler(async (req, res) => {
         throw new Error("User Dont have permission to handle other contact")
     }
 
-    const updatedContact = await Contact.FindByIdAndUpdate(req.params.id, req.body, { new: true })
-    res.status(200).json(updateContact)
+    const updatedContact = await Contact.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    res.status(200).json(updatedContact)
 })
 
 const deleteContact = asyncHandler(async (req, res) => {
@@ -56,7 +56,7 @@ const deleteContact = asyncHandler(async (req, res) => {
         throw new Error("User Dont have permission to handle other contact")
     }
 
-    await Contact.deleteOne();
+    await contact.deleteOne();
     res.status(200).json(contact)
 })
 
