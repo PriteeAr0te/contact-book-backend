@@ -10,12 +10,40 @@ const createContact = asyncHandler(async (req, res) => {
     console.log("Request Body", req.body);
 
     const { name, email, phone } = req.body;
-    if (!name || !email || !phone) {
+    if (!name || !email || !phone ) {
         res.status(400);
         throw new Error("All Fields are required.")
     }
+    
+    const existingContact = await Contact.findOne({
+        user_id: req.user._id,
+        email:email,
+        name: name,
+        phone: phone
+    });
 
-    const contact = await Contact.create({ name, email, phone, user_id: req.user.id })
+    if(existingContact) {
+        res.status(400).json({messege: "Contact already exist with this name, email and phone number."})
+        return;
+    }
+
+    let profilePictureUrl = '';
+    if(req.file) {
+        profilePictureUrl = `/uploads/${req.file.filename}`; 
+    }
+
+    const contact = await Contact.create({ 
+        name, 
+        email, 
+        phone, 
+        user_id: req.user.id, 
+        profilePicture: profilePictureUrl,
+        ...req.body 
+    });
+    if (!contact) {
+        res.status(400);
+        throw new Error("Contact Not Created")
+    }
     res.status(201).json({ contact, isContactCreated: true })
 })
 
@@ -38,6 +66,17 @@ const updateContact = asyncHandler(async (req, res) => {
     if (contact.user_id.toString() !== req.user.id) {
         res.status(403);
         throw new Error("User Dont have permission to handle other contact")
+    }
+
+    const existingContact = await Contact.findOne({
+        user_id : req.user._id,
+        email: req.body.email,
+        name: req.body.name,
+    });
+
+    if( existingContact && existingContact._id.toString() !== req.params.id) {
+        res.status(400).json({messege: "Contact already exist with this name and email."})
+        return;
     }
 
     const updatedContact = await Contact.findByIdAndUpdate(req.params.id, req.body, { new: true })
