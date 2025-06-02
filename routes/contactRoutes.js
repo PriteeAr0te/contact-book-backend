@@ -11,7 +11,7 @@ router.post('/', validateToken, upload.single('profilePicture'), createContact);
 
 router.get('/:id', validateToken, getContact);
 
-router.put('/:id', validateToken, updateContact);
+router.put('/:id', validateToken, upload.single('profilePicture'), updateContact);
 
 router.delete('/:id', validateToken, deleteContact);
 

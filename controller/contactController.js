@@ -1,44 +1,85 @@
 import asyncHandler from 'express-async-handler';
 import Contact from '../models/contactModel.js';
 
+
 const getContacts = asyncHandler(async (req, res) => {
-    const contact = await Contact.find({ user_id: req.user.id });
-    res.status(200).json(contact)
-})
+    const user_id = req.user.id;
+    const { search, tag, isFavorite, page = 1, limit = 3, sortBy = "createdAt", sortOrder = "desc" } = req.query;
+
+    const query = { user_id };
+
+    if (search) {
+        const regex = new RegExp(search, 'i');
+        query.$or = [
+            { name: regex },
+            { email: regex },
+            { phone: regex },
+            { address: regex },
+            { notes: regex },
+        ];
+    }
+
+    if (isFavorite === 'true') {
+        query.isFavorite = true;
+    }
+
+    if (tag) {
+        query.tags = tag;
+    }
+
+    const pageNumber = parseInt(page);
+    const pageSize = parseInt(limit);
+    const skip = (pageNumber - 1) * pageSize;
+
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    const total = await Contact.countDocuments(query);
+    const contacts = await Contact.find(query)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(pageSize);
+
+    res.status(200).json({
+        contacts,
+        totalPages: Math.ceil(total / pageSize),
+        currentPage: pageNumber,
+    });
+});
 
 const createContact = asyncHandler(async (req, res) => {
     console.log("Request Body", req.body);
 
     const { name, email, phone } = req.body;
-    if (!name || !email || !phone ) {
+    if (!name || !email || !phone) {
         res.status(400);
         throw new Error("All Fields are required.")
     }
-    
+
     const existingContact = await Contact.findOne({
         user_id: req.user._id,
-        email:email,
+        email: email,
         name: name,
         phone: phone
     });
 
-    if(existingContact) {
-        res.status(400).json({messege: "Contact already exist with this name, email and phone number."})
+    if (existingContact) {
+        res.status(400).json({ messege: "Contact already exist with this name, email and phone number." })
         return;
     }
 
     let profilePictureUrl = '';
-    if(req.file) {
-        profilePictureUrl = `/uploads/${req.file.filename}`; 
+    if (req.file) {
+        profilePictureUrl = `/uploads/${req.file.filename}`;
     }
 
-    const contact = await Contact.create({ 
-        name, 
-        email, 
-        phone, 
-        user_id: req.user.id, 
+    const contact = await Contact.create({
+        name,
+        email,
+        phone,
+        user_id: req.user.id,
         profilePicture: profilePictureUrl,
-        ...req.body 
+        ...req.body
     });
     if (!contact) {
         res.status(400);
@@ -69,13 +110,13 @@ const updateContact = asyncHandler(async (req, res) => {
     }
 
     const existingContact = await Contact.findOne({
-        user_id : req.user._id,
+        user_id: req.user._id,
         email: req.body.email,
         name: req.body.name,
     });
 
-    if( existingContact && existingContact._id.toString() !== req.params.id) {
-        res.status(400).json({messege: "Contact already exist with this name and email."})
+    if (existingContact && existingContact._id.toString() !== req.params.id) {
+        res.status(400).json({ messege: "Contact already exist with this name and email." })
         return;
     }
 
