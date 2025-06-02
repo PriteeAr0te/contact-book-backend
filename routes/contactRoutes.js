@@ -1,11 +1,13 @@
 import express from 'express';
-import { getContacts, createContact, getContact, updateContact, deleteContact } from '../controller/contactController.js';
+import { getContacts, createContact, getContact, updateContact, deleteContact, getStats } from '../controller/contactController.js';
 import validateToken from '../middleware/validateTokenHandler.js';
 import upload from '../middleware/UploadPictureMiddleware.js';
 
 const router = express.Router();
 
 router.get('/', validateToken, getContacts);
+
+router.get('/stats', validateToken, getStats);
 
 router.post('/', validateToken, upload.single('profilePicture'), createContact);
 

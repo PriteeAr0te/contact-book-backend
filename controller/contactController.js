@@ -47,6 +47,34 @@ const getContacts = asyncHandler(async (req, res) => {
     });
 });
 
+const getStats = asyncHandler(async (req, res) => {
+    const user_id = req.user._id;
+    const contacts = await Contact.find({ user: user_id });
+
+    const totalContacts = contacts.length;
+    console.log("Total Contacts:", totalContacts);
+    const totalFavorites = contacts.filter(contact => contact.isFavorite).length;
+
+    const tagMap = {};
+
+    contacts.forEach((contact) => {
+        if (Array.isArray(contact.tags)) {
+            contact.tags.forEach((tag) => {
+                const key = tag.toLowerCase();
+                tagMap[key] = (tagMap[key] || 0) + 1;
+            });
+        }
+    });
+
+    return res.status(200).json({
+        contacts,
+        totalContacts,
+        totalFavorites,
+        uniqueTags: tagMap,
+    });
+
+})
+
 const createContact = asyncHandler(async (req, res) => {
     console.log("Request Body", req.body);
 
@@ -140,4 +168,4 @@ const deleteContact = asyncHandler(async (req, res) => {
     res.status(200).json(contact)
 })
 
-export { getContacts, createContact, getContact, updateContact, deleteContact }
+export { getContacts, createContact, getContact, updateContact, deleteContact, getStats }
