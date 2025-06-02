@@ -30,6 +30,10 @@ app.use("/api/users", userRoutes);
 app.use(errorHandler);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+app.use('/', (req, res) => {
+  res.send('API is running...');
+})
+
 
 app.listen(PORT, () => {
     console.log(`Server Running on port: ${PORT}`);
