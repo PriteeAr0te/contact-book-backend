@@ -22,7 +22,7 @@ const contactSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
-  address : {
+  address: {
     type: String,
   },
   tags: {
@@ -40,8 +40,9 @@ const contactSchema = new mongoose.Schema({
   profilePicture: {
     type: String,
     trim: true,
-    default: null, 
+    default: null,
   },
+  profilePicturePublicId: { type: String },
 }, {
   timestamps: true,
 });

@@ -18,18 +18,18 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-    // origin: "http://localhost:5173",
-    origin: process.env.FRONTEND_URL || "https://smart-contact-book.netlify.app",
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  }));
+  // origin: "http://localhost:5173",
+  origin: process.env.FRONTEND_URL || "https://smart-contact-book.netlify.app",
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 
 app.use(express.json());
 app.use("/api/contacts", contactRoutes);
 app.use("/api/users", userRoutes);
 app.use(errorHandler);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/', (req, res) => {
   res.send('API is running...');
@@ -37,5 +37,5 @@ app.use('/', (req, res) => {
 
 
 app.listen(PORT, () => {
-    console.log(`Server Running on port: ${PORT}`);
+  console.log(`Server Running on port: ${PORT}`);
 })

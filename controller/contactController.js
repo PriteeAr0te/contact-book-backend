@@ -52,7 +52,6 @@ const getStats = asyncHandler(async (req, res) => {
     const contacts = await Contact.find({ user: user_id });
 
     const totalContacts = contacts.length;
-    console.log("Total Contacts:", totalContacts);
     const totalFavorites = contacts.filter(contact => contact.isFavorite).length;
 
     const tagMap = {};
@@ -98,7 +97,7 @@ const createContact = asyncHandler(async (req, res) => {
 
     let profilePictureUrl = '';
     if (req.file) {
-        profilePictureUrl = `/uploads/${req.file.filename}`;
+        profilePictureUrl = req.file.path;
     }
 
     const contact = await Contact.create({
@@ -107,6 +106,7 @@ const createContact = asyncHandler(async (req, res) => {
         phone,
         user_id: req.user.id,
         profilePicture: profilePictureUrl,
+        profilePicturePublicId: req.file?.filename || '',
         ...req.body
     });
     if (!contact) {
@@ -148,7 +148,18 @@ const updateContact = asyncHandler(async (req, res) => {
         return;
     }
 
-    const updatedContact = await Contact.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    if (req.file && contact.profilePicturePublicId) {
+        await cloudinary.uploader.destroy(contact.profilePicturePublicId);
+    }
+
+    const updatedContact = await Contact.findByIdAndUpdate(req.params.id,
+        {
+            ...req.body,
+            profilePicture: req.file?.path || contact.profilePicture,
+            profilePicturePublicId: req.file?.filename || contact.profilePicturePublicId
+        },
+        { new: true });
+
     res.status(200).json(updatedContact)
 })
 
@@ -162,6 +173,10 @@ const deleteContact = asyncHandler(async (req, res) => {
     if (contact.user_id.toString() !== req.user.id) {
         res.status(403);
         throw new Error("User Dont have permission to handle other contact")
+    }
+
+    if (contact.profilePicturePublicId) {
+        await cloudinary.uploader.destroy(contact.profilePicturePublicId);
     }
 
     await contact.deleteOne();

@@ -1,7 +1,7 @@
 import express from 'express';
 import { getContacts, createContact, getContact, updateContact, deleteContact, getStats } from '../controller/contactController.js';
 import validateToken from '../middleware/validateTokenHandler.js';
-import upload from '../middleware/UploadPictureMiddleware.js';
+import upload from '../middleware/uploadImage.js';
 
 const router = express.Router();
 
