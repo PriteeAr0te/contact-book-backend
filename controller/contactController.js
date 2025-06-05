@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import Contact from '../models/contactModel.js';
+import cloudinary from '../config/cloudinary.js';
 
 
 const getContacts = asyncHandler(async (req, res) => {
