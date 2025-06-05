@@ -9,11 +9,11 @@ router.get('/', validateToken, getContacts);
 
 router.get('/stats', validateToken, getStats);
 
-router.post('/', validateToken, upload.single('profilePicture'), createContact);
+router.post('/', validateToken, createContact);
 
 router.get('/:id', validateToken, getContact);
 
-router.put('/:id', validateToken, upload.single('profilePicture'), updateContact);
+router.put('/:id', validateToken, updateContact);
 
 router.delete('/:id', validateToken, deleteContact);
 

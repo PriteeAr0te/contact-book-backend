@@ -1,6 +1,7 @@
 import asyncHandler from 'express-async-handler';
 import Contact from '../models/contactModel.js';
 import cloudinary from '../config/cloudinary.js';
+import { extractPublicId } from '../utils/extractPublicId.js';
 
 
 const getContacts = asyncHandler(async (req, res) => {
@@ -76,9 +77,8 @@ const getStats = asyncHandler(async (req, res) => {
 })
 
 const createContact = asyncHandler(async (req, res) => {
-    console.log("Request Body", req.body);
+    const { name, email, phone, profilePicture, profilePicturePublicId } = req.body
 
-    const { name, email, phone } = req.body;
     if (!name || !email || !phone) {
         res.status(400);
         throw new Error("All Fields are required.")
@@ -106,8 +106,8 @@ const createContact = asyncHandler(async (req, res) => {
         email,
         phone,
         user_id: req.user.id,
-        profilePicture: profilePictureUrl,
-        profilePicturePublicId: req.file?.filename || '',
+        profilePicture,
+        profilePicturePublicId,
         ...req.body
     });
     if (!contact) {
@@ -127,42 +127,62 @@ const getContact = asyncHandler(async (req, res) => {
 })
 
 const updateContact = asyncHandler(async (req, res) => {
+    const contactId = req.params.id;
+    const userId = req.user.id;
 
-    const contact = await Contact.findById(req.params.id);
+    const contact = await Contact.findById(contactId);
     if (!contact) {
-        res.status(404).json({ messege: "Contact Not Found" })
+        return res.status(404).json({ message: "Contact not found" });
     }
 
-    if (contact.user_id.toString() !== req.user.id) {
-        res.status(403);
-        throw new Error("User Dont have permission to handle other contact")
+    if (contact.user_id.toString() !== userId) {
+        return res.status(403).json({ message: "Not authorized to update this contact" });
     }
 
     const existingContact = await Contact.findOne({
-        user_id: req.user._id,
+        user_id: userId,
         email: req.body.email,
         name: req.body.name,
     });
 
-    if (existingContact && existingContact._id.toString() !== req.params.id) {
-        res.status(400).json({ messege: "Contact already exist with this name and email." })
-        return;
+    if (existingContact && existingContact._id.toString() !== contactId) {
+        return res.status(400).json({ message: "Contact already exists with this name and email." });
     }
 
-    if (req.file && contact.profilePicturePublicId) {
-        await cloudinary.uploader.destroy(contact.profilePicturePublicId);
+    const newImageUrl = req.body.profilePicture;
+
+    if (
+        newImageUrl &&
+        newImageUrl !== contact.profilePicture &&
+        contact.profilePicturePublicId
+    ) {
+        try {
+            await cloudinary.uploader.destroy(contact.profilePicturePublicId);
+        } catch (err) {
+            console.warn("Failed to delete old image from Cloudinary:", err.message);
+        }
     }
 
-    const updatedContact = await Contact.findByIdAndUpdate(req.params.id,
-        {
-            ...req.body,
-            profilePicture: req.file?.path || contact.profilePicture,
-            profilePicturePublicId: req.file?.filename || contact.profilePicturePublicId
-        },
-        { new: true });
+    const updatedFields = {
+        name: req.body.name,
+        email: req.body.email,
+        phone: req.body.phone,
+        address: req.body.address,
+        isFavorite: req.body.isFavorite,
+        notes: req.body.notes,
+        tags: req.body.tags,
+        profilePicture: newImageUrl || contact.profilePicture,
+        profilePicturePublicId: newImageUrl
+            ? extractPublicId(newImageUrl)
+            : contact.profilePicturePublicId,
+    };
 
-    res.status(200).json(updatedContact)
-})
+    const updatedContact = await Contact.findByIdAndUpdate(contactId, updatedFields, {
+        new: true,
+    });
+
+    res.status(200).json(updatedContact);
+});
 
 const deleteContact = asyncHandler(async (req, res) => {
     const contact = await Contact.findById(req.params.id);

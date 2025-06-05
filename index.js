@@ -5,6 +5,7 @@ import errorHandler from './middleware/contactMiddleware.js';
 import cors from 'cors';
 import contactRoutes from './routes/contactRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import uploadRoutes from './routes/uploadRoute.js'
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/api/contacts", contactRoutes);
 app.use("/api/users", userRoutes);
+app.use('/api/upload', uploadRoutes);
 app.use(errorHandler);
 
 app.use('/', (req, res) => {
