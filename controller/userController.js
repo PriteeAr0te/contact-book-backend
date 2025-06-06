@@ -51,17 +51,17 @@ const loginUser = asyncHandler(async (req, res) => {
             user: {
                 username: user.username,
                 email: user.email,
-                id: user.id
+                id: user._id
             }
         }, process.env.SECRET_KEY,
             { expiresIn: "3d" }
         )
-        res.status(200).json({ 
+        res.status(200).json({
             token: accessToken,
             user: {
-                id:user._id,
+                id: user._id,
                 username: user.username,
-                email:user.email,
+                email: user.email,
             }
         });
     } else {
@@ -72,7 +72,61 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 const currentUser = asyncHandler(async (req, res) => {
-    res.json({ messege: "Get the information of current user." })
+    const user = await User.findById(req.user.id).select("-password");
+
+    if (!user) {
+        res.status(400)
+        throw new Error("User not Found.")
+    }
+
+    res.status(200).json(user)
 });
 
-export { registerUser, loginUser, currentUser }
+const updateCurrentUser = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const { username, address, phone } = req.body;
+    let profilePhoto = req.body.profilePhoto;
+
+    if (req.file) {
+        profilePhoto = req.file.path;
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+        res.status(400);
+        throw new Error("User not found");
+    }
+
+    user.username = username || user.username;
+    user.address = address || user.address;
+    user.phone = phone || user.phone;
+    user.profilePhoto = profilePhoto || user.profilePhoto;
+
+    const newImageUrl = req.body.profilePhoto;
+
+    if (
+        newImageUrl &&
+        newImageUrl !== user.profilePhoto &&
+        contact.profilePicturePublicId
+    ) {
+        try {
+            await cloudinary.uploader.destroy(contact.profilePicturePublicId);
+        } catch (err) {
+            console.warn("Failed to delete old image from Cloudinary:", err.message);
+        }
+    }
+
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+        _id: updatedUser._id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        address: updatedUser.address,
+        phone: updatedUser.phone,
+        profilePhoto: updatedUser.profilePhoto
+
+    })
+})
+
+export { registerUser, loginUser, currentUser, updateCurrentUser }

@@ -13,7 +13,20 @@ const userSchema = mongoose.Schema({
     password: {
         type: String,
         required: [true, 'Please enter password.']
-    }
+    },
+    profilePhoto: {
+        type: String,
+        default: null,
+        trim: true
+    },
+    phone: {
+        type: String,
+        required: true,
+        trim: true,
+    },
+    address: {
+        type: String,
+    },
 }, {
     timestamps: true
 });
