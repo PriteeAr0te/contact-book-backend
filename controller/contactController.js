@@ -2,6 +2,8 @@ import asyncHandler from 'express-async-handler';
 import Contact from '../models/contactModel.js';
 import cloudinary from '../config/cloudinary.js';
 import { extractPublicId } from '../utils/extractPublicId.js';
+import User from '../models/userModel.js';
+import mongoose from 'mongoose';
 
 
 const getContacts = asyncHandler(async (req, res) => {
@@ -50,8 +52,8 @@ const getContacts = asyncHandler(async (req, res) => {
 });
 
 const getStats = asyncHandler(async (req, res) => {
-    const user_id = req.user._id;
-    const contacts = await Contact.find({ user: user_id });
+    const user_id = req.user.id;
+    const contacts = await Contact.find({ user_id });
 
     const totalContacts = contacts.length;
     const totalFavorites = contacts.filter(contact => contact.isFavorite).length;
@@ -77,8 +79,9 @@ const getStats = asyncHandler(async (req, res) => {
 })
 
 const createContact = asyncHandler(async (req, res) => {
-    const { name, email, phone, profilePicture, profilePicturePublicId } = req.body
+    console.log("Request Body", req.body);
 
+    const { name, email, phone } = req.body;
     if (!name || !email || !phone) {
         res.status(400);
         throw new Error("All Fields are required.")
@@ -106,8 +109,8 @@ const createContact = asyncHandler(async (req, res) => {
         email,
         phone,
         user_id: req.user.id,
-        profilePicture,
-        profilePicturePublicId,
+        profilePicture: profilePictureUrl,
+        profilePicturePublicId: req.file?.filename || '',
         ...req.body
     });
     if (!contact) {
@@ -122,7 +125,17 @@ const getContact = asyncHandler(async (req, res) => {
 
     if (!contact) {
         res.status(404).json({ messege: "Contact Not Found" })
+    };
+
+    const userId = req.user.id;
+
+    const isOwner = contact.user_id.toString() === userId;
+    const isShared = contact.sharedWith.includes(userId);
+
+    if (!isOwner && !isShared) {
+        return res.status(403).json({ messege: "Not authorized to view this contact" })
     }
+
     res.status(200).json(contact)
 })
 
@@ -204,4 +217,62 @@ const deleteContact = asyncHandler(async (req, res) => {
     res.status(200).json(contact)
 })
 
-export { getContacts, createContact, getContact, updateContact, deleteContact, getStats }
+const shareContact = asyncHandler(async (req, res) => {
+    try {
+        const contactId = req.params.id;
+        const userId = req.user.id;
+        const shareWithEmail = req.body.user?.email;
+
+        console.log(contactId, userId, shareWithEmail);
+
+        if (!shareWithEmail) {
+            return res.status(400).json({ message: "Email of user to share with is required." });
+        }
+
+        const contact = await Contact.findById(contactId);
+        if (!contact) {
+            return res.status(404).json({ message: "Contact Not Found." });
+        }
+
+        if (contact.user_id.toString() !== userId.toString()) {
+            return res.status(403).json({ message: "Not authorized to share this contact." });
+        }
+
+        const userToShareWith = await User.findOne({ email: shareWithEmail });
+        if (!userToShareWith) {
+            return res.status(404).json({ message: "User to share with not found." });
+        }
+
+        const alreadyShared = contact.sharedWith.includes(userToShareWith._id.toString());
+        if (alreadyShared) {
+            return res.status(400).json({ message: "Contact already shared with this user." });
+        }
+
+        contact.sharedWith.push(userToShareWith._id);
+        contact.hasNewContactShared = true;
+        await contact.save();
+
+        res.status(200).json({ message: "Contact shared successfully", sharedWith: shareWithEmail });
+
+    } catch (error) {
+        console.error("Server error in shareContact:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+const getSharedContacts = asyncHandler(async (req, res) => {
+    try {
+        console.log("Inside getSharedContacts");
+        const userId = req.user.id;
+        console.log("userId: ", userId)
+
+        const contacts = await Contact.find({ sharedWith: userId }).populate("user_id", "username email profilePhoto");
+
+        res.status(200).json(contacts);
+        console.log("Success")
+    } catch (error) {
+        console.log("error in get shared contact:", error)
+    }
+});
+
+export { getContacts, createContact, getContact, updateContact, deleteContact, getStats, shareContact, getSharedContacts }

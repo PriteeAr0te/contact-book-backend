@@ -11,6 +11,17 @@ const contactSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  sharedWith: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
+  hasNewContactShared: {
+    type: Boolean
+  },
   email: {
     type: String,
     required: true,

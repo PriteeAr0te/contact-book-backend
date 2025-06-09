@@ -18,7 +18,6 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
-    console.log(hashedPassword);
 
     const user = await User.create({
         username,
@@ -26,10 +25,8 @@ const registerUser = asyncHandler(async (req, res) => {
         password: hashedPassword
     });
 
-    console.log(`User Created ${user}`);
-
     if (user) {
-        res.status(201).json({ _id: user.id, email: user.email });
+        res.status(201).json({ _id: user._id, email: user.email });
     } else {
         res.status(400);
         throw new Error("User data is not valid.");
@@ -62,6 +59,7 @@ const loginUser = asyncHandler(async (req, res) => {
                 id: user._id,
                 username: user.username,
                 email: user.email,
+                profilePhoto: user.profilePhoto
             }
         });
     } else {
@@ -129,4 +127,22 @@ const updateCurrentUser = asyncHandler(async (req, res) => {
     })
 })
 
-export { registerUser, loginUser, currentUser, updateCurrentUser }
+const searchUsers = asyncHandler(async (req, res) => {
+    const query = req.query.query;
+    if(!query) {
+        res.status(400).json({message: "Query is required."})
+    }
+
+    const regex = new RegExp(query, 'i');
+
+    console.log("query: ", query)
+
+    const users = await User.find({
+        $or: [{username: regex}, {email: regex}, {phone: regex}],
+        _id: {$ne: req.user.id},
+    }).select("username email phone profilePhoto");
+
+    res.status(200).json(users)
+})
+
+export { registerUser, loginUser, currentUser, updateCurrentUser, searchUsers }
