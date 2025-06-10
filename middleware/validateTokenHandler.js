@@ -2,22 +2,27 @@ import asyncHandler from 'express-async-handler';
 import jwt from 'jsonwebtoken';
 
 const validateToken = asyncHandler(async (req, res, next) => {
+
     let token;
-    let authHeader = req.headers.authorization || req.headers.Authorization;
-    if(authHeader && authHeader.startsWith("Bearer")) {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+
+    if (authHeader && authHeader.startsWith("Bearer")) {
         token = authHeader.split(" ")[1];
-        jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
-            if(err) {
-                res.status(401);
-                throw new Error("User is not authorized.");
-            }
+
+        try {
+            const decoded = jwt.verify(token, process.env.SECRET_KEY);
+
             req.user = decoded.user;
             next();
-        });
+        } catch (err) {
+            console.error("❌ Token verification failed:", err.message);
+            res.status(401).json({ message: "Invalid token." });
+        }
     } else {
-        res.status(401);
-        throw new Error("User is not authorized");
+        console.error("❌ No auth header or invalid format.");
+        res.status(401).json({ message: "No token provided." });
     }
 });
+
 
 export default validateToken;

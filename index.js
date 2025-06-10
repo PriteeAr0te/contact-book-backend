@@ -11,11 +11,12 @@ dotenv.config();
 
 connectDB()
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
 
 const allowedOrigins = [
   'http://localhost:5173',
 ];
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -32,13 +33,14 @@ app.use(cors({
 
 
 app.use(express.json());
+
 app.use("/api/contacts", contactRoutes);
 app.use("/api/users", userRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use(errorHandler);
 
 app.use('/', (req, res) => {
-  res.send('API is running...');
+  res.send('API is running....');
 })
 
 

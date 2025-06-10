@@ -15,10 +15,18 @@ const contactSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
-  sharedWith: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  }],
+  sharedWith: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+      },
+      viewed: {
+        type: Boolean,
+        default: false
+      }
+    }
+  ],
   hasNewContactShared: {
     type: Boolean
   },

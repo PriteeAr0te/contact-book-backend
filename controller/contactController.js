@@ -51,6 +51,19 @@ const getContacts = asyncHandler(async (req, res) => {
     });
 });
 
+const mySharedContacts = asyncHandler(async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const contacts = await Contact.find({ sharedWith: { $elemMatch: { user: userId } } }).populate("user_id", "username email profilePhoto");
+
+        res.status(200).json(contacts);
+        console.log("Success")
+    } catch (error) {
+        console.log("error in get shared contact:", error)
+    }
+});
+
 const getStats = asyncHandler(async (req, res) => {
     const user_id = req.user.id;
     const contacts = await Contact.find({ user_id });
@@ -130,9 +143,9 @@ const getContact = asyncHandler(async (req, res) => {
     const userId = req.user.id;
 
     const isOwner = contact.user_id.toString() === userId;
-    const isShared = contact.sharedWith.includes(userId);
+    const isSharedWith = contact.sharedWith.some(entry => entry.user?.toString() === req.user.id);
 
-    if (!isOwner && !isShared) {
+    if (!isOwner && !isSharedWith) {
         return res.status(403).json({ messege: "Not authorized to view this contact" })
     }
 
@@ -243,16 +256,26 @@ const shareContact = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: "User to share with not found." });
         }
 
-        const alreadyShared = contact.sharedWith.includes(userToShareWith._id.toString());
+        const alreadyShared = contact.sharedWith.some(
+            (entry) => entry?.user?.toString() === userToShareWith._id.toString()
+        );
+
+
         if (alreadyShared) {
             return res.status(400).json({ message: "Contact already shared with this user." });
         }
 
-        contact.sharedWith.push(userToShareWith._id);
-        contact.hasNewContactShared = true;
+        contact.sharedWith.push({
+            user: userToShareWith._id,
+            viewed: false,
+        });
+
         await contact.save();
 
-        res.status(200).json({ message: "Contact shared successfully", sharedWith: shareWithEmail });
+        res.status(200).json({
+            message: "Contact shared successfully",
+            sharedWith: shareWithEmail,
+        });
 
     } catch (error) {
         console.error("Server error in shareContact:", error);
@@ -260,19 +283,5 @@ const shareContact = asyncHandler(async (req, res) => {
     }
 });
 
-const getSharedContacts = asyncHandler(async (req, res) => {
-    try {
-        console.log("Inside getSharedContacts");
-        const userId = req.user.id;
-        console.log("userId: ", userId)
 
-        const contacts = await Contact.find({ sharedWith: userId }).populate("user_id", "username email profilePhoto");
-
-        res.status(200).json(contacts);
-        console.log("Success")
-    } catch (error) {
-        console.log("error in get shared contact:", error)
-    }
-});
-
-export { getContacts, createContact, getContact, updateContact, deleteContact, getStats, shareContact, getSharedContacts }
+export { getContacts, mySharedContacts, createContact, getContact, updateContact, deleteContact, getStats, shareContact }
