@@ -230,6 +230,35 @@ const deleteContact = asyncHandler(async (req, res) => {
     res.status(200).json(contact)
 })
 
+const markSharedContactsAsViewed = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  await Contact.updateMany(
+    { "sharedWith.user": userId, "sharedWith.viewed": false },
+    { $set: { "sharedWith.$.viewed": true } }
+  );
+
+  console.log("Shared Contact is viewed")
+
+  res.status(200).json({ message: "All shared contacts marked as viewed" });
+});
+
+const checkUnseenSharedContacts = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    console.log("UserId: ", userId)
+
+    const sharedContacts = await Contact.find({
+        "sharedWith.user": userId,
+        "sharedWith.viewed": false
+    });
+
+    console.log("Shared Contacts: ", sharedContacts)
+
+    res.status(200).json({ hasUnseen: sharedContacts.length > 0 });
+});
+
+
 const shareContact = asyncHandler(async (req, res) => {
     try {
         const contactId = req.params.id;
@@ -284,4 +313,4 @@ const shareContact = asyncHandler(async (req, res) => {
 });
 
 
-export { getContacts, mySharedContacts, createContact, getContact, updateContact, deleteContact, getStats, shareContact }
+export { getContacts, mySharedContacts, createContact, getContact, updateContact, deleteContact, markSharedContactsAsViewed, checkUnseenSharedContacts, getStats, shareContact }

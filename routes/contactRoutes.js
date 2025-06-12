@@ -1,5 +1,5 @@
 import express from 'express';
-import { getContacts, createContact, getContact, updateContact, deleteContact, getStats, shareContact, mySharedContacts } from '../controller/contactController.js';
+import { getContacts, createContact, getContact, updateContact, deleteContact, getStats, shareContact, mySharedContacts, markSharedContactsAsViewed, checkUnseenSharedContacts } from '../controller/contactController.js';
 import validateToken from '../middleware/validateTokenHandler.js';
 
 const router = express.Router();
@@ -7,6 +7,8 @@ const router = express.Router();
 router.get('/', validateToken, getContacts);
 
 router.get('/shared', validateToken, mySharedContacts)
+
+router.get('/shared-status', validateToken, checkUnseenSharedContacts);
 
 router.get('/stats', validateToken, getStats);
 
@@ -18,6 +20,7 @@ router.put('/:id', validateToken, updateContact);
 
 router.post('/:id/share', validateToken, shareContact);
 
+router.put('/shared/viewed', validateToken, markSharedContactsAsViewed);
 
 router.delete('/:id', validateToken, deleteContact);
 

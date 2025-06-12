@@ -15,6 +15,7 @@ const PORT = 5000;
 
 const allowedOrigins = [
   'http://localhost:5173',
+  'https://smart-contact-book.netlify.app'
 ];
 
 app.use(cors({
