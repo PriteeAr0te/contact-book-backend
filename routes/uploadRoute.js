@@ -20,7 +20,7 @@ router.get('/signature', (req, res) => {
         timestamp,
         signature,
         apiKey: process.env.CLOUDINARY_API_KEY,
-        cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+        cloudName: cloudinary.config().cloud_name,
         folder: 'ContactBook',
     });
 });
