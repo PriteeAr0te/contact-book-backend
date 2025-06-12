@@ -51,6 +51,28 @@ const getContacts = asyncHandler(async (req, res) => {
     });
 });
 
+const deleteContact = asyncHandler(async (req, res) => {
+    const contact = await Contact.findById(req.params.id);
+
+    if (!contact) {
+        res.status(404).json({ messege: "Contact Not Found" })
+    }
+
+    console.log("User Id: ", req.user.id)
+
+    if (contact.user_id.toString() !== req.user.id) {
+        res.status(403);
+        throw new Error("User Dont have permission to handle other contact")
+    }
+
+    if (contact.profilePicturePublicId) {
+        await cloudinary.uploader.destroy(contact.profilePicturePublicId);
+    }
+
+    await contact.deleteOne();
+    res.status(200).json(contact)
+})
+
 const mySharedContacts = asyncHandler(async (req, res) => {
     try {
         const userId = req.user.id;
@@ -210,37 +232,17 @@ const updateContact = asyncHandler(async (req, res) => {
     res.status(200).json(updatedContact);
 });
 
-const deleteContact = asyncHandler(async (req, res) => {
-    const contact = await Contact.findById(req.params.id);
-
-    if (!contact) {
-        res.status(404).json({ messege: "Contact Not Found" })
-    }
-
-    if (contact.user_id.toString() !== req.user.id) {
-        res.status(403);
-        throw new Error("User Dont have permission to handle other contact")
-    }
-
-    if (contact.profilePicturePublicId) {
-        await cloudinary.uploader.destroy(contact.profilePicturePublicId);
-    }
-
-    await contact.deleteOne();
-    res.status(200).json(contact)
-})
-
 const markSharedContactsAsViewed = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+    const userId = req.user.id;
 
-  await Contact.updateMany(
-    { "sharedWith.user": userId, "sharedWith.viewed": false },
-    { $set: { "sharedWith.$.viewed": true } }
-  );
+    await Contact.updateMany(
+        { "sharedWith.user": userId, "sharedWith.viewed": false },
+        { $set: { "sharedWith.$.viewed": true } }
+    );
 
-  console.log("Shared Contact is viewed")
+    console.log("Shared Contact is viewed")
 
-  res.status(200).json({ message: "All shared contacts marked as viewed" });
+    res.status(200).json({ message: "All shared contacts marked as viewed" });
 });
 
 const checkUnseenSharedContacts = asyncHandler(async (req, res) => {
@@ -257,7 +259,6 @@ const checkUnseenSharedContacts = asyncHandler(async (req, res) => {
 
     res.status(200).json({ hasUnseen: sharedContacts.length > 0 });
 });
-
 
 const shareContact = asyncHandler(async (req, res) => {
     try {
@@ -313,4 +314,4 @@ const shareContact = asyncHandler(async (req, res) => {
 });
 
 
-export { getContacts, mySharedContacts, createContact, getContact, updateContact, deleteContact, markSharedContactsAsViewed, checkUnseenSharedContacts, getStats, shareContact }
+export { getContacts, mySharedContacts, createContact, getContact, updateContact, markSharedContactsAsViewed, checkUnseenSharedContacts, getStats, shareContact, deleteContact }
