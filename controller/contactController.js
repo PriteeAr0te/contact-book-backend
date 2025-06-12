@@ -53,6 +53,7 @@ const getContacts = asyncHandler(async (req, res) => {
 
 const deleteContact = asyncHandler(async (req, res) => {
     const contact = await Contact.findById(req.params.id);
+    console.log("Into delete contact")
 
     if (!contact) {
         res.status(404).json({ messege: "Contact Not Found" })
@@ -64,6 +65,8 @@ const deleteContact = asyncHandler(async (req, res) => {
         res.status(403);
         throw new Error("User Dont have permission to handle other contact")
     }
+
+    console.log("Before deleting image");
 
     if (contact.profilePicturePublicId) {
         await cloudinary.uploader.destroy(contact.profilePicturePublicId);
@@ -314,4 +317,4 @@ const shareContact = asyncHandler(async (req, res) => {
 });
 
 
-export { getContacts, mySharedContacts, createContact, getContact, updateContact, markSharedContactsAsViewed, checkUnseenSharedContacts, getStats, shareContact, deleteContact }
+export { getContacts, deleteContact, mySharedContacts, createContact, getContact, updateContact, markSharedContactsAsViewed, checkUnseenSharedContacts, getStats, shareContact }
